@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVE - AI Video Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Faculty+Glyphic&family=Funnel+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --primary-color: #20c997;
+            --secondary-color: #0dcaf0;
+            --dark-bg: #12141c;
+            --card-bg: #252a41;
+            --card-bg-transparent: rgba(37, 42, 65, 0.9);
+            --input-bg: rgba(0, 0, 0, 0.2);
+            --input-focus-bg: rgba(0, 0, 0, 0.3);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-focus-border: var(--secondary-color);
+            --text-primary: #ffffff;
+            --text-secondary: #e5e7eb;
+            --text-muted: #9ca3af;
+            --success-color: #4ade80;
+            --success-bg: rgba(74, 222, 128, 0.1);
+            --error-color: #f87171;
+            --error-bg: rgba(248, 113, 113, 0.1);
+            --gradient-start: #0d6efd;
+            --gradient-mid: var(--primary-color);
+            --gradient-end: var(--secondary-color);
+            --secondary-color-rgb: 13, 202, 240;
+            --switch-bg-off: #4b5563;
+            --switch-bg-on: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid));
+            --border-radius-lg: 16px;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --border-radius-pill: 34px;
+        }
+        body { font-family: "Faculty Glyphic", serif; margin: 0; padding: 0; background-color: var(--dark-bg); color: var(--text-secondary); line-height: 1.7; overflow-x: hidden; overflow-y: auto; position: relative; }
+        #fluid-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .container { background-color: var(--card-bg-transparent); padding: 25px 30px; border-radius: var(--border-radius-lg); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); width: 100%; max-width: 1500px; box-sizing: border-box; position: relative; overflow: hidden; z-index: 1; margin: 40px auto; }
+        .container::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(to right, var(--gradient-start), var(--gradient-mid), var(--gradient-end)); border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0; opacity: 0.8; z-index: 2; }
+        .content-wrapper { position: relative; z-index: 1; }
+        h1, h2 { text-align: center; color: var(--text-primary); margin-bottom: 35px; font-family: "Faculty Glyphic", sans-serif; font-weight: 700; text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); }
+        h1 { font-size: 2.4rem; margin-bottom: 45px; }
+        h2 { font-size: 1.8rem; margin-top: 45px; }
+        h1 i { margin-right: 12px; background: linear-gradient(to right, var(--gradient-start), var(--gradient-mid), var(--gradient-end)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none; font-size: 0.9em; vertical-align: middle; }
+        .main-card { background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(32, 201, 151, 0.1), rgba(13, 202, 240, 0.1)); padding: 25px 35px; border-radius: var(--border-radius-md); margin-bottom: 45px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); text-align: center; }
+        .main-title { color: var(--text-primary); font-size: 1.6rem; margin-bottom: 10px; font-family: "Funnel Sans", sans-serif; font-weight: 700; }
+        .main-subtitle { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 0; font-family: "Faculty Glyphic", serif; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 35px; }
+        .form-group { margin-bottom: 0; background-color: rgba(255, 255, 255, 0.04); padding: 18px 18px 12px 18px; border-radius: var(--border-radius-md); transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; border: 1px solid transparent; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; min-height: 170px; }
+        .form-group-span-full { grid-column: 1 / -1; min-height: auto; margin-bottom: 20px; }
+        .form-group-span-full:last-of-type { margin-bottom: 0; }
+        .form-group:has(input[type="number"]), .form-group:has(select) { justify-content: center; text-align: center; min-height: auto; }
+        .form-group:focus-within:not(.switch-group-box) { background-color: rgba(255, 255, 255, 0.07); border-color: rgba(var(--secondary-color-rgb), 0.3); box-shadow: 0 0 15px rgba(var(--secondary-color-rgb), 0.1); }
+        .form-group:has(input[type="number"]) label, .form-group:has(select) label { justify-content: center; margin-bottom: 10px; }
+        .form-group:has(input[type="file"]) label:not(.file-input-label) { justify-content: flex-start; }
+        .form-group label:not(.switch-text-label):not(.file-input-label) { display: flex; align-items: center; margin-bottom: 12px; font-weight: 700; color: var(--text-secondary); font-size: 0.95rem; flex-shrink: 0; font-family: "Faculty Glyphic", serif; }
+        .form-group label:not(.switch-text-label):not(.file-input-label) i { margin-right: 10px; color: var(--text-muted); width: 1.1em; text-align: center; transition: color 0.3s ease; font-size: 1em; }
+        .form-group:focus-within:not(.switch-group-box) label:not(.switch-text-label):not(.file-input-label) i { color: var(--secondary-color); }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group select, .form-group textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--input-border); border-radius: var(--border-radius-sm); box-sizing: border-box; font-size: 1rem; transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; background-color: var(--input-bg); color: var(--text-primary); flex-grow: 0; margin-bottom: 10px; font-family: "Faculty Glyphic", serif; }
+        .form-group input[type="number"] { text-align: center; }
+        .form-group select { appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cccccc%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 14px center; background-size: 11px auto; padding-right: 40px; }
+        .form-group:has(select) select { text-align: center; padding-left: 40px; }
+        .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); opacity: 0.7; font-family: "Faculty Glyphic", serif; }
+        .form-group input[type="text"]:focus, .form-group input[type="number"]:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--input-focus-border); outline: none; box-shadow: 0 0 0 3px rgba(var(--secondary-color-rgb), 0.25); background-color: var(--input-focus-bg); }
+        .form-group input:focus, .form-group select:focus { box-shadow: 0 0 8px rgba(var(--secondary-color-rgb), 0.8); }
+        .form-group textarea { resize: vertical; flex-grow: 1; min-height: 70px; }
+        .form-group input[type="file"] { opacity: 0; position: absolute; z-index: -1; left: 0; top: 0; width: 1px; height: 1px; }
+        .file-input-label { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; border: 1px dashed var(--input-border); border-radius: var(--border-radius-sm); background-color: var(--input-bg); color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; margin-bottom: 10px; text-align: center; width: 100%; box-sizing: border-box; min-height: 75px; flex-grow: 1; font-family: "Faculty Glyphic", serif; }
+        .file-input-label i { margin-right: 0; margin-bottom: 8px; font-size: 1.2em; }
+        .file-input-label span { display: block; }
+        .file-input-label:hover { border-color: var(--secondary-color); color: var(--secondary-color); background-color: var(--input-focus-bg); }
+        .file-name-display { font-size: 0.85rem; color: var(--text-muted); margin-top: 0px; margin-bottom: 10px; display: block; min-height: 1.2em; word-break: break-all; text-align: center; font-family: "Faculty Glyphic", serif; }
+        .form-group small { font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: auto; padding-top: 8px; font-family: 'Faculty Glyphic', serif; font-style: italic; opacity: 0.8; flex-shrink: 0; text-align: left; line-height: 1.3; }
+        .form-group:has(input[type="number"]) small, .form-group:has(select) small, .form-group:has(input[type="file"]) small { text-align: center; }
+        .form-group:has(.switch-wrapper) { background-color: rgba(255, 255, 255, 0.04); padding: 15px 20px; border-radius: var(--border-radius-md); border: 1px solid transparent; transition: background-color 0.3s ease, border-color 0.3s ease; min-height: auto; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+        .form-group:has(.switch-wrapper):focus-within { background-color: rgba(255, 255, 255, 0.07); border-color: rgba(var(--secondary-color-rgb), 0.3); }
+        .switch-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0; }
+        .switch-text-label { font-weight: 700; color: var(--text-secondary); font-size: 0.95rem; cursor: pointer; user-select: none; margin-right: 15px; font-family: "Faculty Glyphic", serif; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--switch-bg-off); transition: .4s; border-radius: var(--border-radius-pill); }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .switch input:checked + .slider { background: var(--switch-bg-on); }
+        .switch input:focus + .slider { box-shadow: 0 0 0 3px rgba(var(--secondary-color-rgb), 0.25); }
+        .switch input:checked + .slider:before { transform: translateX(24px); }
+        .button { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 35px; background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end)); color: white; padding: 16px 28px; border: none; border-radius: var(--border-radius-sm); cursor: pointer; font-size: 1.15rem; font-family: "Funnel Sans", sans-serif; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3); position: relative; overflow: hidden; text-transform: uppercase; letter-spacing: 0.5px; }
+        .button::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 70%); transform: rotate(45deg); transition: opacity 0.5s ease; opacity: 0; }
+        .button:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 10px 25px rgba(13, 110, 253, 0.5); }
+        .button:hover::after { opacity: 1; }
+        .button:active { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3); }
+        .button i { margin-right: 12px; font-size: 1em; }
+        .button:disabled { background: #4b5563; cursor: not-allowed; transform: none; box-shadow: none; color: var(--text-muted); }
+        .button:disabled::after { display: none; }
+        .button:disabled i { color: var(--text-muted); }
+        .message { margin-top: 30px; padding: 20px 28px; border-radius: var(--border-radius-md); display: flex; align-items: center; animation: fadeIn 0.4s ease-out; border: 1px solid transparent; font-size: 1.05rem; font-family: "Faculty Glyphic", serif; position: relative; z-index: 2; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message i { margin-right: 18px; font-size: 1.3em; flex-shrink: 0; }
+        .error { background-color: var(--error-bg); color: var(--error-color); border-color: rgba(248, 113, 113, 0.3); }
+        .error i { color: var(--error-color); }
+        .success { background-color: var(--success-bg); color: var(--success-color); border-color: rgba(74, 222, 128, 0.3); }
+        .success i { color: var(--success-color); }
+        #loading-indicator { display: none; text-align: center; margin: 25px 0 0 0; font-weight: 500; color: var(--text-muted); font-size: 0.95rem; font-family: "Faculty Glyphic", serif; position: relative; z-index: 2; }
+        #loading-indicator .spinner { display: inline-block; vertical-align: middle; border: 3px solid rgba(255, 255, 255, 0.1); border-top-color: var(--secondary-color); border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; margin-right: 10px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #progress-area { display: none; margin-top: 35px; padding: 28px 35px; background-color: rgba(0, 0, 0, 0.2); border-radius: var(--border-radius-md); border: 1px solid var(--input-border); animation: fadeIn 0.5s ease-out; text-align: center; position: relative; z-index: 2; }
+        #progress-area .progress-spinner { display: inline-block; vertical-align: middle; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: var(--gradient-start); border-right-color: var(--gradient-mid); border-bottom-color: var(--gradient-end); border-left-color: transparent; border-radius: 50%; width: 32px; height: 32px; animation: spin 0.8s linear infinite; margin-bottom: 18px; }
+        #progress-stage { display: block; font-weight: 700; color: var(--text-primary); font-size: 1.2rem; margin-bottom: 10px; font-family: "Funnel Sans", sans-serif; }
+        #progress-message { display: block; color: var(--text-secondary); font-size: 1rem; min-height: 1.2em; font-family: "Faculty Glyphic", serif; }
+        #video-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.7); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; animation: fadeIn 0.3s ease-out; }
+        .modal-content { background-color: var(--card-bg); margin: auto; padding: 30px 35px; border-radius: var(--border-radius-lg); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); width: 90%; max-width: 800px; position: relative; border-top: 6px solid; border-image: linear-gradient(to right, var(--gradient-start), var(--gradient-mid), var(--gradient-end)) 1; text-align: center; }
+        .modal-close { color: var(--text-muted); position: absolute; top: 15px; right: 25px; font-size: 28px; font-weight: bold; transition: color 0.3s ease; }
+        .modal-close:hover, .modal-close:focus { color: var(--text-primary); text-decoration: none; cursor: pointer; }
+        .modal-content h2 { font-size: 1.6rem; margin-top: 0; margin-bottom: 25px; color: var(--text-primary); font-family: "Funnel Sans", sans-serif; }
+        .modal-video-container { margin-bottom: 30px; background-color: rgba(0, 0, 0, 0.25); padding: 15px; border-radius: var(--border-radius-md); box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.2); border: 1px solid var(--input-border); }
+        .modal-video-container video { max-width: 100%; height: auto; display: block; border-radius: var(--border-radius-sm); background-color: #000; }
+        .modal-download-link { display: inline-flex; align-items: center; justify-content: center; margin-top: 15px; background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); color: white; padding: 14px 24px; text-decoration: none; border-radius: var(--border-radius-sm); font-weight: 700; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(var(--secondary-color-rgb), 0.3); position: relative; overflow: hidden; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.5px; font-family: "Funnel Sans", sans-serif; }
+        .modal-download-link::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%); transform: rotate(45deg); transition: opacity 0.5s ease; opacity: 0; }
+        .modal-download-link:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(var(--secondary-color-rgb), 0.4); }
+        .modal-download-link:hover::after { opacity: 1; }
+        .modal-download-link:active { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--secondary-color-rgb), 0.3); }
+        .modal-download-link i { margin-right: 12px; font-size: 1em; }
+        #modal-hq-confirmation { display: none; margin-top: 30px; padding: 22px 28px; background-color: rgba(var(--secondary-color-rgb), 0.1); border: 1px solid rgba(var(--secondary-color-rgb), 0.3); border-radius: var(--border-radius-md); text-align: center; animation: fadeIn 0.4s ease-out; }
+        #modal-hq-confirmation p { margin: 0 0 18px 0; color: var(--text-secondary); font-size: 1rem; font-family: "Faculty Glyphic", serif; }
+        #modal-hq-confirmation .popup-buttons button { padding: 9px 20px; border-radius: var(--border-radius-sm); border: none; cursor: pointer; font-weight: 700; font-size: 0.95rem; transition: all 0.2s ease; margin: 0 10px; min-width: 90px; font-family: "Funnel Sans", sans-serif; }
+        #modal-hq-confirm-yes { background-color: var(--success-color); color: var(--dark-bg); }
+        #modal-hq-confirm-yes:hover { background-color: #6adf9a; transform: translateY(-1px); }
+        #modal-hq-confirm-no { background-color: var(--text-muted); color: var(--dark-bg); }
+        #modal-hq-confirm-no:hover { background-color: #b0b7c3; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+    <canvas id="fluid-canvas"></canvas>
+    <div class="container">
+        <div class="content-wrapper">
+            <h1><i class="fas fa-magic"></i>AI Video Editor</h1>
+            <div class="main-card">
+                <div class="main-title">Craft Your Vision Instantly</div>
+                <div class="main-subtitle">Let AI handle the edits. Just upload your files and describe the style.</div>
+            </div>
+            <form id="video-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="videos"><i class="fas fa-folder-open"></i>Source Videos</label>
+                        <label for="videos" class="file-input-label"><i class="fas fa-upload"></i><span>Choose Files...</span></label>
+                        <input type="file" id="videos" name="videos[]" accept="video/*" multiple required data-display-target="videos-display">
+                        <span class="file-name-display" id="videos-display">No files selected</span>
+                        <small>Select one or more video clips.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="audios"><i class="fas fa-music"></i>Source Audios</label>
+                        <label for="audios" class="file-input-label"><i class="fas fa-upload"></i><span>Choose Files...</span></label>
+                        <input type="file" id="audios" name="audios[]" accept="audio/*" multiple data-display-target="audios-display">
+                        <span class="file-name-display" id="audios-display">No files selected</span>
+                        <small>Optional background audio tracks.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="style_sample"><i class="fas fa-palette"></i>Style Sample</label>
+                        <label for="style_sample" class="file-input-label"><i class="fas fa-upload"></i><span>Choose File...</span></label>
+                        <input type="file" id="style_sample" name="style_sample" accept="video/*" data-display-target="style-sample-display">
+                        <span class="file-name-display" id="style-sample-display">No file selected</span>
+                        <small>Optional video to mimic style.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration"><i class="fas fa-clock"></i>Target Duration (s)</label>
+                        <input type="number" id="duration" name="duration" step="1" min="1" required placeholder="e.g., 30">
+                        <small>Desired final video length.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="variations"><i class="fas fa-random"></i>Variations</label>
+                        <select id="variations" name="variations">
+                            <option value="1" selected>1 Plan</option>
+                            <option value="2">2 Plans</option>
+                            <option value="3">3 Plans</option>
+                            <option value="4">4 Plans</option>
+                        </select>
+                        <small>Number of edit plans to generate.</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-wrapper">
+                            <label for="mute_audio" class="switch-text-label">Mute Audio</label>
+                            <label class="switch"><input type="checkbox" id="mute_audio" name="mute_audio"><span class="slider"></span></label>
+                        </div>
+                         <div class="switch-wrapper">
+                            <label for="generate_preview" class="switch-text-label">Generate Preview</label>
+                            <label class="switch"><input type="checkbox" id="generate_preview" name="generate_preview"><span class="slider"></span></label>
+                        </div>
+                        <small>Mute source audio / Generate low-res preview first.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="model_name"><i class="fas fa-brain"></i>AI Model</label>
+                        <select id="model_name" name="model_name">
+                            {% if available_models %}
+                                {% for model in available_models %}
+                                    <option value="{{ model }}" {% if model == default_model %}selected{% endif %}>{{ model }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="{{ default_model | escape }}" selected>{{ default_model | escape }}</option>
+                            {% endif %}
+                        </select>
+                        <small>Choose the AI editing model.</small>
+                    </div>
+                    <div class="form-group form-group-span-full">
+                        <label for="style_desc"><i class="fas fa-pen-alt"></i>Style Description</label>
+                        <textarea id="style_desc" name="style_desc" rows="2" required placeholder="Describe desired style, pacing, mood, effects, etc. Defaults to Instagram Reel style if left blank.">{{ default_style_desc | escape }}</textarea>
+                        <small>Describe the desired look and feel (e.g., "fast-paced, energetic, like a travel vlog").</small>
+                    </div>
+                     <div class="form-group form-group-span-full">
+                         <label for="output"><i class="fas fa-file-video"></i>Output File Name</label>
+                         <input type="text" id="output" name="output" value="ai_edited_video.mp4" required>
+                         <small>Name for the final generated video file.</small>
+                     </div>
+                </div>
+                <button type="submit" id="submit-button" class="button"><i class="fas fa-cogs"></i>Generate Video</button>
+            </form>
+            <div id="loading-indicator" style="display: none;"><div class="spinner"></div><span>Submitting request...</span></div>
+            <div id="progress-area" style="display: none;"><div class="progress-spinner"></div><span id="progress-stage">Starting...</span><span id="progress-message">Please wait while we process your request.</span></div>
+            <div id="message-area"></div>
+        </div>
+    </div>
+    <div id="video-modal">
+        <div class="modal-content">
+            <span class="modal-close" id="modal-close-button">×</span>
+            <h2 id="modal-title">Your Generated Video</h2>
+            <div class="modal-video-container">
+                <video id="modal-video" controls controlsList="nodownload">Your browser does not support the video tag.</video>
+            </div>
+            <a id="modal-download-link" href="#" class="modal-download-link" download><i class="fas fa-download"></i>Download Video</a>
+            <div id="modal-hq-confirmation" style="display: none;">
+                <p id="modal-hq-popup-message">Preview generated! Generate the high-quality version now?</p>
+                <div class="popup-buttons">
+                    <button id="modal-hq-confirm-yes">Yes, Generate HQ (Plan 1)</button>
+                    <button id="modal-hq-confirm-no">No, Thanks</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+
+    <script>
+        const form = document.getElementById('video-form');
+        const submitButton = document.getElementById('submit-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const progressArea = document.getElementById('progress-area');
+        const progressStage = document.getElementById('progress-stage');
+        const progressMessage = document.getElementById('progress-message');
+        const messageArea = document.getElementById('message-area');
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        const videoModal = document.getElementById('video-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalVideo = document.getElementById('modal-video');
+        const modalDownloadLink = document.getElementById('modal-download-link');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        const modalHqPopup = document.getElementById('modal-hq-confirmation');
+        const modalHqPopupMessage = document.getElementById('modal-hq-popup-message');
+        const modalHqConfirmYes = document.getElementById('modal-hq-confirm-yes');
+        const modalHqConfirmNo = document.getElementById('modal-hq-confirm-no');
+        const variationsSelect = document.getElementById('variations');
+        const modelSelect = document.getElementById('model_name');
+        const fluidCanvasElement = document.getElementById('fluid-canvas');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentRequestId = null;
+            let lastPreviewRequestId = null;
+            let numPlansGeneratedForLastPreview = 1;
+            let progressInterval = null;
+            const POLLING_INTERVAL = 2000;
+
+            function showMessage(type, text, area = messageArea) {
+                const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+                area.innerHTML = `<div class="message ${type}"><i class="fas ${iconClass}"></i>${text}</div>`;
+                area.style.display = 'block';
+                area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            function hideModal() {
+                videoModal.style.display = 'none';
+                modalVideo.pause(); modalVideo.src = ''; modalDownloadLink.href = '#'; modalDownloadLink.removeAttribute('download'); modalHqPopup.style.display = 'none';
+            }
+            function clearState(clearForm = true) {
+                messageArea.innerHTML = ''; messageArea.style.display = 'none'; hideModal(); progressArea.style.display = 'none'; loadingIndicator.style.display = 'none';
+                if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+                currentRequestId = null; lastPreviewRequestId = null; numPlansGeneratedForLastPreview = 1;
+                submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video';
+                if (clearForm) {
+                    form.reset();
+                    fileInputs.forEach(input => {
+                        const displayTargetId = input.dataset.displayTarget; const displaySpan = document.getElementById(displayTargetId);
+                        if (displaySpan) { displaySpan.textContent = input.multiple ? 'No files selected' : 'No file selected'; displaySpan.style.color = 'var(--text-muted)'; }
+                    });
+                    const styleDescTextarea = document.getElementById('style_desc'); const tempEl = document.createElement('textarea'); tempEl.innerHTML = `{{ default_style_desc | escape }}`; const defaultDesc = tempEl.value; if (styleDescTextarea) styleDescTextarea.value = defaultDesc;
+                    const outputInput = document.getElementById('output'); if (outputInput) outputInput.value = 'ai_edited_video.mp4';
+                    if (variationsSelect) variationsSelect.value = '1';
+                    tempEl.innerHTML = `{{ default_model | escape }}`; const defaultModelValue = tempEl.value; if (modelSelect) modelSelect.value = defaultModelValue;
+                    document.getElementById('mute_audio').checked = false; document.getElementById('generate_preview').checked = false;
+                }
+            }
+            function updateProgressDisplay(stage, message) {
+                progressStage.textContent = stage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); progressMessage.textContent = message || 'Processing...'; progressArea.style.display = 'block'; loadingIndicator.style.display = 'none'; hideModal();
+            }
+            fileInputs.forEach(input => {
+                input.addEventListener('change', (event) => {
+                    const displayTargetId = input.dataset.displayTarget; const displaySpan = document.getElementById(displayTargetId);
+                    if (displaySpan) {
+                        const files = input.files;
+                        if (files.length === 1) { displaySpan.textContent = files[0].name; displaySpan.style.color = 'var(--text-secondary)'; }
+                        else if (files.length > 1) { displaySpan.textContent = `${files.length} files selected`; displaySpan.style.color = 'var(--text-secondary)'; }
+                        else { displaySpan.textContent = input.multiple ? 'No files selected' : 'No file selected'; displaySpan.style.color = 'var(--text-muted)'; }
+                    }
+                });
+            });
+            async function triggerHqGeneration(previewRequestId) {
+                if (!previewRequestId) { showMessage('error', 'Cannot generate HQ: Original preview request ID is missing.'); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; return; }
+                console.log(`Requesting HQ generation based on preview ID: ${previewRequestId}`); hideModal(); messageArea.innerHTML = ''; messageArea.style.display = 'none'; updateProgressDisplay('STARTING_HQ', 'Initializing High-Quality generation (using Plan 1)...'); submitButton.disabled = true; submitButton.innerHTML = '<i class="fas fa-hourglass-half"></i> Processing HQ...';
+                try {
+                    const response = await fetch(`/generate-hq/${previewRequestId}`, { method: 'POST' }); const result = await response.json();
+                    if (!response.ok) { throw new Error(result.message || `Server error: ${response.status}`); }
+                    if (result.status === 'processing_started' && result.request_id) {
+                        currentRequestId = result.request_id; lastPreviewRequestId = null; numPlansGeneratedForLastPreview = 1; console.log("HQ Processing started with Request ID:", currentRequestId); updateProgressDisplay('RECEIVED_HQ', result.message || 'HQ Processing started...'); if (progressInterval) clearInterval(progressInterval); progressInterval = setInterval(pollProgress, POLLING_INTERVAL);
+                    } else { throw new Error(result.message || 'Received an unexpected response when starting HQ generation.'); }
+                } catch (error) {
+                    console.error('HQ Generation Start Error:', error); progressArea.style.display = 'none'; showMessage('error', `Failed to start HQ generation: ${error.message}`); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video';
+                }
+            }
+            async function pollProgress() {
+                if (!currentRequestId) { console.warn("Polling stopped: No active request ID."); if (progressInterval) clearInterval(progressInterval); progressInterval = null; return; }
+                try {
+                    const response = await fetch(`/progress/${currentRequestId}`);
+                    if (!response.ok) {
+                        if (response.status === 404) { console.error(`Polling failed: Request ID ${currentRequestId} not found.`); showMessage('error', `Polling error: Request ID not found or expired. Please start a new request.`); }
+                        else { console.error(`Polling failed with status: ${response.status}`); let errorMsg = `Polling error: Server returned status ${response.status}. Please try again later.`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (e) { } showMessage('error', errorMsg); }
+                        if (progressInterval) clearInterval(progressInterval); progressInterval = null; progressArea.style.display = 'none'; submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; return;
+                    }
+                    const data = await response.json(); updateProgressDisplay(data.stage, data.message);
+                    if (data.stage === 'COMPLETED') {
+                        clearInterval(progressInterval); progressInterval = null; progressArea.style.display = 'none'; const resultData = data.result || {}; const isPreview = resultData.is_preview; const successMsg = data.message || `Video ${isPreview ? 'preview ' : ''}generated successfully!`; showMessage('success', successMsg, messageArea);
+                        if (resultData.video_url) {
+                            modalTitle.textContent = `Your Generated Video ${isPreview ? '(Preview)' : '(HQ)'}`; modalVideo.src = resultData.video_url; modalDownloadLink.href = resultData.video_url; modalDownloadLink.download = resultData.output_filename || `ai_edited_video${isPreview ? '_preview' : '_hq'}.mp4`; modalVideo.load();
+                            if (isPreview && resultData.request_id) {
+                                lastPreviewRequestId = resultData.request_id; numPlansGeneratedForLastPreview = resultData.num_plans_generated || 1;
+                                if (numPlansGeneratedForLastPreview > 1) { modalHqPopupMessage.textContent = `Preview generated using Plan 1/${numPlansGeneratedForLastPreview}. Generate the high-quality version using Plan 1?`; modalHqConfirmYes.textContent = `Yes, Generate HQ (Plan 1)`; }
+                                else { modalHqPopupMessage.textContent = `Preview generated! Generate the high-quality version now?`; modalHqConfirmYes.textContent = `Yes, Generate HQ`; }
+                                modalHqPopup.style.display = 'block'; submitButton.disabled = true; submitButton.innerHTML = '<i class="fas fa-check"></i> Preview Ready';
+                            } else { modalHqPopup.style.display = 'none'; submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; }
+                            videoModal.style.display = 'flex';
+                        } else { showMessage('error', `Processing completed, but no video URL was returned.${isPreview ? ' (Preview)' : ''}`); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; }
+                    } else if (data.stage === 'FAILED') {
+                        clearInterval(progressInterval); progressInterval = null; progressArea.style.display = 'none'; showMessage('error', data.error || 'An unknown error occurred during processing.'); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video';
+                    } else if (data.stage === 'UNKNOWN') {
+                         clearInterval(progressInterval); progressInterval = null; progressArea.style.display = 'none'; showMessage('error', data.message || 'Request status is unknown or has expired.'); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video';
+                    }
+                } catch (error) {
+                    console.error('Polling Fetch Error:', error); if (progressInterval) clearInterval(progressInterval); progressInterval = null; progressArea.style.display = 'none'; showMessage('error', `Polling connection error: ${error.message}. Please check connection.`); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video';
+                }
+            }
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault(); clearState(false);
+                const videosInput = document.getElementById('videos'); const durationInput = document.getElementById('duration'); const styleDescInput = document.getElementById('style_desc'); const outputInput = document.getElementById('output');
+                if (!videosInput.files || videosInput.files.length === 0) { showMessage('error', 'Please select at least one source video file.'); return; }
+                if (!durationInput.value || durationInput.value <= 0) { showMessage('error', 'Please enter a valid positive target duration.'); return; }
+                if (!styleDescInput.value.trim()) { showMessage('error', 'Please provide a style description.'); return; }
+                if (!outputInput.value.trim()) { showMessage('error', 'Please provide an output file name.'); return; }
+                loadingIndicator.style.display = 'block'; submitButton.disabled = true; submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; const formData = new FormData(form);
+                try {
+                    const response = await fetch('/generate', { method: 'POST', body: formData, }); const result = await response.json();
+                    if (!response.ok) { throw new Error(result.message || `Server error: ${response.status}`); }
+                    if (result.status === 'processing_started' && result.request_id) {
+                        currentRequestId = result.request_id; lastPreviewRequestId = null; numPlansGeneratedForLastPreview = 1; console.log("Processing started with Request ID:", currentRequestId); loadingIndicator.style.display = 'none'; updateProgressDisplay('RECEIVED', result.message || 'Processing started...'); if (progressInterval) clearInterval(progressInterval); progressInterval = setInterval(pollProgress, POLLING_INTERVAL); submitButton.innerHTML = '<i class="fas fa-hourglass-half"></i> Processing...';
+                    } else { throw new Error(result.message || 'Received an unexpected response from the server.'); }
+                } catch (error) {
+                    console.error('Form Submission Error:', error); showMessage('error', `Submission Failed: ${error.message || 'Could not connect.'}`); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; loadingIndicator.style.display = 'none';
+                }
+            });
+            modalCloseButton.addEventListener('click', () => { hideModal(); if (lastPreviewRequestId) { submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; } });
+            videoModal.addEventListener('click', (event) => { if (event.target === videoModal) { hideModal(); if (lastPreviewRequestId) { submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; } } });
+            modalHqConfirmYes.addEventListener('click', () => { triggerHqGeneration(lastPreviewRequestId); });
+            modalHqConfirmNo.addEventListener('click', () => { hideModal(); submitButton.disabled = false; submitButton.innerHTML = '<i class="fas fa-cogs"></i> Generate Video'; console.log("User declined HQ generation."); lastPreviewRequestId = null; });
+        });
+    </script>
+</body>
+</html>
