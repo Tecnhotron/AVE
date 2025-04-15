@@ -101,7 +101,7 @@ AVE is built to help users generate short, high-quality, portrait-mode videos th
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/AVE.git
+git clone https://github.com/Tecnhotron/AVE.git
 cd AVE
 ```
 
